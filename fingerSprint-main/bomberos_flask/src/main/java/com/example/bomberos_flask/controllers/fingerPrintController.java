@@ -3,6 +3,7 @@ package com.example.bomberos_flask.controllers;
 import com.digitalpersona.uareu.*; // Importa las clases del SDK
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
@@ -19,37 +20,31 @@ import com.example.bomberos_flask.controllers.FingerprintVerificationRequest.Use
 @RequestMapping("/fingerprint")
 public class fingerPrintController {
     @PostMapping("/register")
-    public String registerFingerprint() {
+    public ResponseEntity<String> registerFingerprint() {
         try {
             // Inicializar el dispositivo
             ReaderCollection readers = UareUGlobal.GetReaderCollection();
             readers.GetReaders();
 
             if (readers.isEmpty()) {
-                return "No se encontró ningún lector de huellas digitales.";
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No se encontró ningún lector de huellas.");
             }
 
             Reader reader = readers.get(0);
             reader.Open(Reader.Priority.EXCLUSIVE);
 
-            Reader.Capabilities capabilities = reader.GetCapabilities();
-            if (!capabilities.can_capture) {
-                reader.Close();
-                return "El lector no soporta captura de huellas.";
-            }
-
             // Capturar la imagen de la huella
             Reader.CaptureResult result = reader.Capture(
-                Fid.Format.ANSI_381_2004,
-                Reader.ImageProcessing.IMG_PROC_DEFAULT,
-                500,
-                5000 // Timeout de captura
+                    Fid.Format.ANSI_381_2004,
+                    Reader.ImageProcessing.IMG_PROC_DEFAULT,
+                    500,
+                    5000 // Timeout de captura
             );
 
             reader.Close();
 
             if (result == null || result.image == null) {
-                return "No se pudo capturar la huella digital.";
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No se pudo capturar la huella digital.");
             }
 
             // Convertir la imagen en un objeto FMD
@@ -62,23 +57,25 @@ public class fingerPrintController {
 
             // Guardar fmdBytes en la base de datos aquí (ejemplo comentado)
             // saveFingerprintToDatabase(userId, fmdBytes);
-
-            return  fmdBase64;
+            return ResponseEntity.status(HttpStatus.OK).body(fmdBase64);
 
         } catch (UareUException e) {
-            return "Error al registrar la huella: " + e.getMessage();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error al registrar la huella: " + e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error inesperado: " + e.getMessage());
         }
     }
 
     public List<FingerprintVerificationRequest.UserFingerprint> getStoredFingerprintsFromFlask() {
         String flaskUrl = "http://localhost:5000/fingerPrint"; // Asegúrate de que Flask esté corriendo en este puerto
         RestTemplate restTemplate = new RestTemplate();
-        
+
         try {
             // Realiza la solicitud GET a Flask
-            ResponseEntity<FingerprintVerificationRequest.UserFingerprint[]> response = 
-                restTemplate.exchange(flaskUrl, HttpMethod.POST, null, FingerprintVerificationRequest.UserFingerprint[].class);
-            
+            ResponseEntity<FingerprintVerificationRequest.UserFingerprint[]> response = restTemplate.exchange(flaskUrl,
+                    HttpMethod.POST, null, FingerprintVerificationRequest.UserFingerprint[].class);
+
             // Verifica si la respuesta es válida
             if (response.getBody() != null) {
                 return Arrays.asList(response.getBody());
@@ -91,16 +88,17 @@ public class fingerPrintController {
         }
     }
 
-
     @PostMapping("/verify")
-    public ResponseEntity<Map<String, Object>> verifyFingerprint(@RequestBody List<FingerprintVerificationRequest.UserFingerprint> users) {
+    public ResponseEntity<Map<String, Object>> verifyFingerprint(
+            @RequestBody List<FingerprintVerificationRequest.UserFingerprint> users) {
         try {
             // Inicializar lector de huellas
             ReaderCollection readers = UareUGlobal.GetReaderCollection();
             readers.GetReaders();
-            
+
             if (readers.isEmpty()) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", "No se encontró ningún lector de huellas."));
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(Map.of("message", "No se encontró ningún lector de huellas."));
             }
 
             Reader reader = readers.get(0);
@@ -108,16 +106,17 @@ public class fingerPrintController {
 
             // Capturar la huella digital
             Reader.CaptureResult result = reader.Capture(
-                Fid.Format.ANSI_381_2004,
-                Reader.ImageProcessing.IMG_PROC_DEFAULT,
-                500,
-                5000 // Timeout
+                    Fid.Format.ANSI_381_2004,
+                    Reader.ImageProcessing.IMG_PROC_DEFAULT,
+                    500,
+                    5000 // Timeout
             );
 
             reader.Close();
 
             if (result == null || result.image == null) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", "No se pudo capturar la huella digital."));
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(Map.of("message", "No se pudo capturar la huella digital."));
             }
 
             // Convertir la imagen en un FMD
@@ -132,7 +131,8 @@ public class fingerPrintController {
                 System.out.println("Encoded String: " + user.getFingerPrint());
 
                 byte[] storedData = Base64.getDecoder().decode(user.getFingerPrint());
-                Fmd storedFmd = UareUGlobal.GetImporter().ImportFmd(storedData, Fmd.Format.ANSI_378_2004, Fmd.Format.ANSI_378_2004);
+                Fmd storedFmd = UareUGlobal.GetImporter().ImportFmd(storedData, Fmd.Format.ANSI_378_2004,
+                        Fmd.Format.ANSI_378_2004);
 
                 // Comparar con la huella capturada
                 int score = engine.Compare(capturedFmd, 0, storedFmd, 0);
@@ -155,7 +155,8 @@ public class fingerPrintController {
             return ResponseEntity.ok(response);
 
         } catch (UareUException e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("message", "Error en la verificación: " + e.getMessage()));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "Error en la verificación: " + e.getMessage()));
         }
     }
 }
