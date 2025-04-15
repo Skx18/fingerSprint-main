@@ -1,0 +1,4 @@
+com\example\bomberos_flask\controllers\fingerPrintController.class
+com\example\bomberos_flask\controllers\FingerprintVerificationRequest$UserFingerprint.class
+com\example\bomberos_flask\controllers\FingerprintVerificationRequest.class
+com\example\bomberos_flask\BomberosFlaskApplication.class
