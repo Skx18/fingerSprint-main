@@ -1,5 +1,26 @@
-FROM amazoncorretto:17-alpine
+# Stage 1: Build the application
+FROM eclipse-temurin:17-jdk AS builder
 
-COPY target/bomberos_flask-0.0.1-SNAPSHOT.jar /api-V1.jar    
+# Set the working directory
+WORKDIR /app
 
-ENTRYPOINT [ "jar", "-jar", "/api-V1.jar" ]
+# Copy the entire project
+COPY . .
+
+# Damos permisos a mvnw si está en el proyecto
+RUN chmod +x mvnw || true
+
+# Compilamos la app
+RUN ./mvnw clean package -DskipTests || mvn clean package -DskipTests
+
+# Stage 2: Run the application
+FROM eclipse-temurin:17-jre
+
+WORKDIR /app
+
+# Copiamos el .jar desde el stage anterior
+COPY --from=builder /app/target/bomberos_flask-0.0.1-SNAPSHOT.jar app.jar
+
+EXPOSE 8080
+
+ENTRYPOINT ["java", "-jar", "app.jar"]
