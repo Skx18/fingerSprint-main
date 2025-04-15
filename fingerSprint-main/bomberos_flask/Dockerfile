@@ -10,6 +10,8 @@ WORKDIR /app
 # Copy the project files
 COPY . .
 
+RUN ls -la /app
+
 # Build the application
 RUN mvn clean package -DskipTests
 
