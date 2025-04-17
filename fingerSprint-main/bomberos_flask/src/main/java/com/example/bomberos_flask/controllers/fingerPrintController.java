@@ -16,6 +16,7 @@ import java.util.Map;
 
 import com.example.bomberos_flask.controllers.FingerprintVerificationRequest.UserFingerprint;
 
+
 @RestController
 @RequestMapping("/fingerprint")
 public class fingerPrintController {
@@ -87,6 +88,12 @@ public class fingerPrintController {
             return List.of(); // Retorna lista vacía en caso de error
         }
     }
+
+    @GetMapping("/")
+    public String hello() {
+        return "Hola desde Spring Boot!";
+    }
+
 
     @PostMapping("/verify")
     public ResponseEntity<Map<String, Object>> verifyFingerprint(

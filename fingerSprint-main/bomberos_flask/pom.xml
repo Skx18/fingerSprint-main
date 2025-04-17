@@ -45,18 +45,30 @@
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+
 		<dependency>
 			<groupId>com.digitalpersona</groupId>
-			<artifactId>dpuareu</artifactId>
-			<version>1.0</version>
-			<scope>system</scope>
-			<systemPath>${project.basedir}/libs/dpuareu.jar</systemPath>
+  			<artifactId>dpuareu</artifactId>
+  			<version>1.0</version>
 		</dependency>
 
 	</dependencies>
 
 	<build>
 		<plugins>
+			<plugin>
+            	<groupId>org.apache.maven.plugins</groupId>
+            	<artifactId>maven-jar-plugin</artifactId>
+           		<version>3.1.0</version>
+            	<configuration>
+                	<archive>
+                    	<manifestEntries>
+                        	<Main-Class>com.example.bomberos_flask.BomberosFlaskApplication</Main-Class>
+                    	</manifestEntries>
+                	</archive>
+         		</configuration>
+        	</plugin>
+
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
@@ -72,6 +84,14 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+				<executions>
+        			<execution>
+            			<goals>
+                			<goal>repackage</goal>
+            			</goals>
+        			</execution>
+    			</executions>
+
 				<configuration>
 					<excludes>
 						<exclude>
