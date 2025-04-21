@@ -16,10 +16,10 @@ import java.util.Map;
 
 import com.example.bomberos_flask.controllers.FingerprintVerificationRequest.UserFingerprint;
 
-
 @RestController
 @RequestMapping("/fingerprint")
 public class fingerPrintController {
+
     @PostMapping("/register")
     public ResponseEntity<String> registerFingerprint() {
         try {
@@ -69,7 +69,7 @@ public class fingerPrintController {
     }
 
     public List<FingerprintVerificationRequest.UserFingerprint> getStoredFingerprintsFromFlask() {
-        String flaskUrl = "http://localhost:5000/fingerPrint"; // Asegúrate de que Flask esté corriendo en este puerto
+        String flaskUrl = "https://bomberos-flask.onrender.com/fingerPrint"; // Asegúrate de que Flask esté corriendo en este puerto
         RestTemplate restTemplate = new RestTemplate();
 
         try {
@@ -93,7 +93,6 @@ public class fingerPrintController {
     public String hello() {
         return "Hola desde Spring Boot!";
     }
-
 
     @PostMapping("/verify")
     public ResponseEntity<Map<String, Object>> verifyFingerprint(
@@ -166,4 +165,39 @@ public class fingerPrintController {
                     .body(Map.of("message", "Error en la verificación: " + e.getMessage()));
         }
     }
+
+    @PostMapping("/checkin")
+    public ResponseEntity<Map<String, Object>> checkInWithFingerprint() {
+        try {
+            // 1. Obtener huellas almacenadas desde Flask
+            List<FingerprintVerificationRequest.UserFingerprint> storedFingerprints = getStoredFingerprintsFromFlask();
+
+            if (storedFingerprints.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(Map.of("message", "No hay huellas registradas en el sistema"));
+            }
+
+            // 2. Verificar huella (reutilizando la lógica de verifyFingerprint)
+            ResponseEntity<Map<String, Object>> verificationResult = verifyFingerprint(storedFingerprints);
+
+            if (verificationResult.getStatusCode() != HttpStatus.OK) {
+                return verificationResult;
+            }
+
+            // 3. Llamar a Flask para crear/finalizar el turno
+            String flaskEndpoint = "https://bomberos-flask.onrender.com/fingerPrint"; // Ya maneja la lógica
+
+            RestTemplate restTemplate = new RestTemplate();
+            ResponseEntity<String> flaskResponse = restTemplate.postForEntity(flaskEndpoint, null, String.class);
+
+            // 4. Retornar la respuesta de Flask a la ventana
+            return ResponseEntity.status(flaskResponse.getStatusCode())
+                    .body(Map.of("message", flaskResponse.getBody()));
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "Error al verificar huella: " + e.getMessage()));
+        }
+    }
+
 }

@@ -47,10 +47,10 @@
 		</dependency>
 
 		<dependency>
-			<groupId>com.digitalpersona</groupId>
-  			<artifactId>dpuareu</artifactId>
-  			<version>1.0</version>
-		</dependency>
+            <groupId>com.digitalpersona</groupId>
+            <artifactId>dpuareu</artifactId>
+            <version>1.0</version>
+        </dependency>
 
 	</dependencies>
 
