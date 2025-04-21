@@ -7,6 +7,8 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.http.*;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.Arrays;
 import java.util.Base64;
@@ -60,9 +62,26 @@ public class fingerPrintController {
             // Agregar la huella al mapa recibido
             userData.put("huella", fmdBase64);
 
-            // Aquí podrías guardar el usuario junto con la huella si lo deseas
+            // Realizar el POST a la URL externa para crear el usuario
+            String url = "https://bomberos-flask.onrender.com/users/";
 
-            return ResponseEntity.ok(userData);
+            // Preparamos los headers
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+
+            // Creamos el objeto de solicitud
+            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(userData, headers);
+
+            // Enviamos la solicitud POST
+            RestTemplate restTemplate = new RestTemplate();
+            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, entity, String.class);
+
+            // Retornamos la respuesta de la API externa
+            if (response.getStatusCode() == HttpStatus.CREATED) {
+                return ResponseEntity.ok(Map.of("message", "Usuario creado exitosamente", "data", response.getBody()));
+            } else {
+                return ResponseEntity.status(response.getStatusCode()).body(Map.of("error", "No se pudo crear el usuario en la API externa"));
+            }
 
         } catch (UareUException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
