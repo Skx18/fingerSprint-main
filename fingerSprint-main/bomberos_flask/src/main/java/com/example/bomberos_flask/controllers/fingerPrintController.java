@@ -20,14 +20,15 @@ import com.example.bomberos_flask.controllers.FingerprintVerificationRequest.Use
 @RequestMapping("/fingerprint")
 public class fingerPrintController {
     @PostMapping("/register")
-    public ResponseEntity<String> registerFingerprint() {
+    public ResponseEntity<Map<String, Object>> registerFingerprint(@RequestBody Map<String, Object> userData) {
         try {
             // Inicializar el dispositivo
             ReaderCollection readers = UareUGlobal.GetReaderCollection();
             readers.GetReaders();
 
             if (readers.isEmpty()) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No se encontró ningún lector de huellas.");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(Map.of("error", "No se encontró ningún lector de huellas."));
             }
 
             Reader reader = readers.get(0);
@@ -44,26 +45,31 @@ public class fingerPrintController {
             reader.Close();
 
             if (result == null || result.image == null) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No se pudo capturar la huella digital.");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(Map.of("error", "No se pudo capturar la huella digital."));
             }
 
             // Convertir la imagen en un objeto FMD
             Engine engine = UareUGlobal.GetEngine();
             Fmd fmd = engine.CreateFmd(result.image, Fmd.Format.ANSI_378_2004);
 
-            // Obtener los bytes del FMD
+            // Obtener los bytes del FMD y codificarlos en Base64
             byte[] fmdBytes = fmd.getData();
             String fmdBase64 = Base64.getEncoder().encodeToString(fmdBytes);
 
-            // Guardar fmdBytes en la base de datos aquí (ejemplo comentado)
-            // saveFingerprintToDatabase(userId, fmdBytes);
-            return ResponseEntity.status(HttpStatus.OK).body(fmdBase64);
+            // Agregar la huella al mapa recibido
+            userData.put("huella", fmdBase64);
+
+            // Aquí podrías guardar el usuario junto con la huella si lo deseas
+
+            return ResponseEntity.ok(userData);
 
         } catch (UareUException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error al registrar la huella: " + e.getMessage());
+                    .body(Map.of("error", "Error al registrar la huella: " + e.getMessage()));
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error inesperado: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Error inesperado: " + e.getMessage()));
         }
     }
 
