@@ -15,7 +15,7 @@ import java.util.Map;
 
 import com.example.bomberos_flask.controllers.FingerprintVerificationRequest.UserFingerprint;
 
-@CrossOrigin("http://localhost:5173")
+@CrossOrigin("*")
 @RestController
 @RequestMapping("/fingerprint")
 public class fingerPrintController {
@@ -57,7 +57,7 @@ public class fingerPrintController {
             // Obtener los bytes del FMD y codificarlos en Base64
             byte[] fmdBytes = fmd.getData();
             String fmdBase64 = Base64.getEncoder().encodeToString(fmdBytes);
-
+            System.out.println(fmdBase64);
             // Agregar la huella al mapa recibido
             userData.put("huella", fmdBase64);
 
@@ -116,12 +116,13 @@ public class fingerPrintController {
 
     @PostMapping("/verify")
     public ResponseEntity<Map<String, Object>> verifyFingerprint() {
-        try {
+        try { 
             // 1. Obtener las huellas de Flask
             RestTemplate restTemplate = new RestTemplate();
             ResponseEntity<UserFingerprint[]> response = restTemplate.getForEntity(
                     "https://bomberos-flask.onrender.com/attendance/fingerprints", UserFingerprint[].class);
             UserFingerprint[] users = response.getBody();
+            System.out.println(users);
 
             if (users == null || users.length == 0) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
@@ -171,7 +172,7 @@ public class fingerPrintController {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Huella no reconocida"));
             }
 
-            // 5. Enviar ID y score a Flask para que maneje el inicio/cierre de turno
+            // 5. Enviar ID y screo a Flask para que maneje el inicio/cierre de turno
             Map<String, Object> requestMap = Map.of(
                     "id", bestMatchId,
                     "score", bestScore);
@@ -190,6 +191,7 @@ public class fingerPrintController {
                     "flask_response", flaskResponse.getBody()));
 
         } catch (Exception e) {
+            System.out.println(e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("message", "Error: " + e.getMessage()));
         }

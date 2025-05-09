@@ -46,13 +46,10 @@
 			<scope>test</scope>
 		</dependency>
 		<dependency>
-			<groupId>com.digitalpersona</groupId>
-			<artifactId>dpuareu</artifactId>
-			<version>1.0</version>
-			<scope>system</scope>
-			<systemPath>${project.basedir}/libs/dpuareu.jar</systemPath>
-		</dependency>
-
+      <groupId>com.digitalpersona</groupId>
+      <artifactId>dpuareu</artifactId>
+      <version>1.0</version>
+    </dependency>
 	</dependencies>
 
 	<build>
